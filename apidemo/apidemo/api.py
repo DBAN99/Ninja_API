@@ -1,5 +1,5 @@
 from typing import List
-from ninja import NinjaAPI, Query
+from ninja import NinjaAPI, Query, Form
 from ninja import Schema, Path
 from datetime import date
 from pydantic import Field
@@ -73,3 +73,9 @@ def create(request, item: Item):
 @api.post("/items/{item_id}")
 def update(request, item_id: int, item: Item, q: str):
     return {"item_id": item_id, "item": item.dict(), "q": q}
+
+# ----------------------------------------------------------
+
+@api.post("/login")
+def login(request, username: str = Form(...), password: str = Form(...)):
+    return {'username': username, 'password': '*****'}
