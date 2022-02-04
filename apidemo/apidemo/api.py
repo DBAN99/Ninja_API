@@ -79,3 +79,19 @@ def update(request, item_id: int, item: Item, q: str):
 @api.post("/login")
 def login(request, username: str = Form(...), password: str = Form(...)):
     return {'username': username, 'password': '*****'}
+
+
+# ----------------------------------------------------------
+
+from ninja.security import HttpBearer
+
+
+class AuthBearer(HttpBearer):
+    def authenticate(self, request, token):
+        if token == "supersecret":
+            return token
+
+
+@api.get("/bearer", auth=AuthBearer())
+def bearer(request):
+    return {"token": request.auth}
