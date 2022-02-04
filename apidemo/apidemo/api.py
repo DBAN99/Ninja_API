@@ -14,11 +14,21 @@ class GlobalAuth(HttpBearer):
 
 api = NinjaAPI(auth=GlobalAuth())
 
-
 @api.post("/token", auth=None)  # < overriding global auth
 def get_token(request, username: str = Form(...), password: str = Form(...)):
     if username == "admin" and password == "giraffethinnknslong":
         return {"token": "supersecret"}
+
+# -------------------------------------------
+
+def ip_whitelist(request):
+    if request.META["REMOTE_ADDR"] == "127.0.0.1":
+        return "127.0.0.1"
+
+
+@api.get("/ipwhiltelist", auth=ip_whitelist)
+def ipwhiltelist(request):
+    return f"Authenticated client, IP = {request.auth}"
 
 # -----------------------------------------------------------
 
