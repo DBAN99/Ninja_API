@@ -2,10 +2,25 @@ from typing import List
 from ninja import NinjaAPI, Query, Form
 from ninja import Schema, Path
 from datetime import date
+
+from ninja.security import HttpBearer
 from pydantic import Field
 
-api = NinjaAPI()
+class GlobalAuth(HttpBearer):
+    def authenticate(self, request, token):
+        if token == "supersecret":
+            return token
 
+
+api = NinjaAPI(auth=GlobalAuth())
+
+
+@api.post("/token", auth=None)  # < overriding global auth
+def get_token(request, username: str = Form(...), password: str = Form(...)):
+    if username == "admin" and password == "giraffethinnknslong":
+        return {"token": "supersecret"}
+
+# -----------------------------------------------------------
 
 @api.get("/items/{item_id}")
 def read_item(request, item_id : int):
@@ -83,15 +98,3 @@ def login(request, username: str = Form(...), password: str = Form(...)):
 
 # ----------------------------------------------------------
 
-from ninja.security import HttpBearer
-
-
-class AuthBearer(HttpBearer):
-    def authenticate(self, request, token):
-        if token == "supersecret":
-            return token
-
-
-@api.get("/bearer", auth=AuthBearer())
-def bearer(request):
-    return {"token": request.auth}
