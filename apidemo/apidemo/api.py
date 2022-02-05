@@ -1,110 +1,39 @@
-from typing import List
-from ninja import NinjaAPI, Query, Form
-from ninja import Schema, Path
-from datetime import date
+from django.contrib import admin
+from django.urls import path
+from ninja import NinjaAPI, Router
 
-from ninja.security import HttpBearer
-from pydantic import Field
+api = NinjaAPI()
 
-class GlobalAuth(HttpBearer):
-    def authenticate(self, request, token):
-        if token == "supersecret":
-            return token
+first_router = Router()
+second_router = Router()
+third_router = Router()
 
 
-api = NinjaAPI(auth=GlobalAuth())
-
-@api.post("/token", auth=None)  # < overriding global auth
-def get_token(request, username: str = Form(...), password: str = Form(...)):
-    if username == "admin" and password == "giraffethinnknslong":
-        return {"token": "supersecret"}
-
-# -------------------------------------------
-
-def ip_whitelist(request):
-    if request.META["REMOTE_ADDR"] == "127.0.0.1":
-        return "127.0.0.1"
+@api.get("/add")
+def add(request, a: int, b: int):
+    return {"result": a + b}
 
 
-@api.get("/ipwhiltelist", auth=ip_whitelist)
-def ipwhiltelist(request):
-    return f"Authenticated client, IP = {request.auth}"
-
-# -----------------------------------------------------------
-
-@api.get("/items/{item_id}")
-def read_item(request, item_id : int):
-    return {"item_id": item_id}
-
-# ------------------------------------------------------
-class PathDate(Schema):
-    year: int
-    month: int
-    day: int
-
-    def value(self):
-        return date(self.year, self.month, self.day)
-
-@api.get("/events/{year}/{month}/{day}")
-def events(request, date: PathDate = Path(...)):
-    return {"date": date.value()}
-# ------------------------------------------------------
+@first_router.get("/add")
+def add(request, a: int, b: int):
+    return {"result": a + b}
 
 
-weapons = ["Ninjato", "Shuriken", "Katana", "Kama", "Kunai", "Naginata", "Yari"]
-
-@api.get("/weapons")
-def list_weapons(request, limit: int = 10, offset: int = 0):
-    return weapons[offset: offset + limit]
-
-@api.get("/weapons/search")
-def search_weapons(request, q: str, offset: int = 0):
-    results = [w for w in weapons if q in w.lower()]
-    print(q, results)
-    return results[offset: offset + 10]
-
-# ------------------------------------------------------
-
-@api.get("/example")
-def example(request, s: str = None, b: bool = None, d: date = None, i: int = None):
-    return [s, b, d, i]
-
-# ------------------------------------------------------
-
-class Filters(Schema):
-    limit: int = 100
-    offset: int = None
-    query: str = None
-    category__in: List[str] = Field(None, alias="categories")
+@second_router.get("/add")
+def add(request, a: int, b: int):
+    return {"result": a + b}
 
 
-@api.get("/filter")
-def events(request, filters: Filters = Query(...)):
-    return {"filters": filters.dict()}
-
-# ------------------------------------------------------
-
-class Item(Schema):
-    name: str
-    description: str = None
-    price: float
-    quantity: int
+@third_router.get("/add")
+def add(request, a: int, b: int):
+    return {"result": a + b}
 
 
-@api.post("/items")
-def create(request, item: Item):
-    return item
+second_router.add_router("l3", third_router)
+first_router.add_router("l2", second_router)
+api.add_router("l1", first_router)
 
-@api.post("/items/{item_id}")
-def update(request, item_id: int, item: Item, q: str):
-    return {"item_id": item_id, "item": item.dict(), "q": q}
-
-# ----------------------------------------------------------
-
-@api.post("/login")
-def login(request, username: str = Form(...), password: str = Form(...)):
-    return {'username': username, 'password': '*****'}
-
-
-# ----------------------------------------------------------
-
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("api/", api.urls),
+]
